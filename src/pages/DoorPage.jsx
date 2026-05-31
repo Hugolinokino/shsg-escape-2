@@ -55,6 +55,14 @@ export default function DoorPage() {
 
   // For documents puzzle gate (kept for API compatibility)
   const [puzzleGateOpen, setPuzzleGateOpen] = useState(true)
+
+  // Room entry lock
+  const [roomLocked, setRoomLocked] = useState(() =>
+    !!(door?.roomCode) && localStorage.getItem(`shsg_${doorId}_room_unlocked`) !== 'true'
+  )
+  const [roomEntry, setRoomEntry] = useState('')
+  const [roomEntryWrong, setRoomEntryWrong] = useState(false)
+  const [roomEntryShake, setRoomEntryShake] = useState(false)
   // For gridcipher: code input hidden until gate checkbox ticked
   const [gridGateChecked, setGridGateChecked] = useState(false)
 
@@ -151,6 +159,87 @@ export default function DoorPage() {
       setTimeout(() => setShakeInput(false), 600)
       setTimeout(() => setSubmitStatus(null), 2500)
     }
+  }
+
+  const handleRoomEntry = () => {
+    const input = roomEntry.trim().toUpperCase()
+    const correct = (door.roomCode || '').toUpperCase()
+    if (input === correct) {
+      localStorage.setItem(`shsg_${doorId}_room_unlocked`, 'true')
+      setRoomLocked(false)
+    } else {
+      setRoomEntry('')
+      setRoomEntryWrong(true)
+      setRoomEntryShake(true)
+      setTimeout(() => setRoomEntryShake(false), 600)
+      setTimeout(() => setRoomEntryWrong(false), 2500)
+    }
+  }
+
+  // ── ROOM LOCKED ─────────────────────────────────────────────
+  if (roomLocked) {
+    return (
+      <PageWrap>
+        <TopBar label={door.teamLabel} />
+
+        <div style={{ marginBottom: 20 }}>
+          <TeamBadge team={door.team} label={door.teamLabel} />
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 14, marginBottom: 2 }}>
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: 11,
+              color: colors.primary, letterSpacing: '0.15em',
+              border: `1px solid ${colors.border}`, padding: '2px 8px', borderRadius: 2,
+            }}>
+              {door.number}
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, letterSpacing: '0.02em' }}>
+              {door.title}
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text3)', letterSpacing: '0.1em' }}>{door.room}</div>
+        </div>
+
+        <Divider />
+
+        <div style={{
+          background: 'var(--bg2)', border: `1px solid ${colors.border}`,
+          borderRadius: 2, padding: '20px 18px', marginBottom: 20,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 22, marginBottom: 4 }}>🔒</div>
+          <div style={{
+            fontFamily: 'var(--font-mono)', fontSize: 10,
+            letterSpacing: '0.22em', color: colors.primary, textTransform: 'uppercase',
+          }}>
+            RAUM GESICHERT
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-mono)', fontSize: 12,
+            color: 'var(--text2)', lineHeight: 1.7,
+          }}>
+            Durchsucht den Raum.<br />Findet den Zugangscode und gebt ihn ein.
+          </div>
+        </div>
+
+        <div
+          className={roomEntryShake ? 'shake' : ''}
+          style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+        >
+          <CodeInput
+            value={roomEntry}
+            onChange={setRoomEntry}
+            onSubmit={handleRoomEntry}
+            placeholder="RAUMCODE EINGEBEN"
+          />
+          {roomEntryWrong && (
+            <StatusMsg type="error">FALSCHER CODE.</StatusMsg>
+          )}
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <SubmitButton onClick={handleRoomEntry}>Entriegeln →</SubmitButton>
+        </div>
+      </PageWrap>
+    )
   }
 
   // ── ANIMATION ───────────────────────────────────────────────
